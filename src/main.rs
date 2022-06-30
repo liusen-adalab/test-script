@@ -1,4 +1,4 @@
-use std::{io, str::FromStr};
+use std::str::FromStr;
 
 use cmd_lib::*;
 use structopt::StructOpt;
@@ -46,10 +46,10 @@ impl FromStr for Code {
 impl Code {
     fn to_string(&self) -> &'static str {
         match self {
-            Code::Pool => "pool",
-            Code::Gate => "gate",
+            Code::Pool => "fish-pool",
+            Code::Gate => "pool-gate",
             Code::All => "all",
-            Code::Distribute => "distribution",
+            Code::Distribute => "coin-distribution",
         }
     }
 }
