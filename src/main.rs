@@ -142,6 +142,23 @@ fn set_config_env() {
         "DISTRIBUTION_CONFIG",
         BIN_DIR.to_string() + "/config-distribution.toml",
     );
+    std::env::set_var(
+        "FISH_POOL_CONFIG",
+        BIN_DIR.to_string() + "/fish-pool.toml",
+    );
+    std::env::set_var(
+        "GATE_CONFIG",
+        BIN_DIR.to_string() + "/pool-gate.toml",
+    );
+}
+
+fn run_service() -> CmdResult{
+    run_cmd!(
+        tmux select-window -t $SESSION:$WIN_SERVICE;
+        tmux send-keys "redis-server" C-m;
+    )?;
+
+    Ok(())
 }
 
 fn main() -> CmdResult {
@@ -153,8 +170,10 @@ fn main() -> CmdResult {
     match opt.cmd {
         Sub::Restart => {
             setup_tmux()?;
+            // run service
+            run_service()?;
             // run in tmux
-            run_in_tmux(Code::Distribute)?;
+            run_in_tmux(Code::All)?;
         }
         Sub::SetTmux => {
             setup_tmux()?;
