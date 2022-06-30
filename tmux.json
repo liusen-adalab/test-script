@@ -1,0 +1,16 @@
+{
+    "pool": {
+        "pane0": "pool",
+        "pane1": "gate",
+        "pane2": "coin-distribute",
+        "pane3": "none"
+    },
+    "node": {
+        "pane0": "node0",
+        "pane1": "node1",
+        "pane2": "node2"
+    },
+    "sevice": {
+        "pane0": "redis-server"
+    }
+}
