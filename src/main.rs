@@ -14,7 +14,7 @@ const WIN_NODE: &str = "node";
 const WIN_SERVICE: &str = "service";
 const WIN_MINER: &str = "miner";
 
-const BIN_DIR: &str = "./bin";
+const BIN_DIR: &str = "bin";
 
 #[derive(StructOpt)]
 #[structopt(name = "dd_test", about = "Get disk read bandwidth.")]
@@ -30,6 +30,10 @@ enum Sub {
     Kill {
         #[structopt(short)]
         node: bool,
+    },
+    Update {
+        #[structopt(short, long)]
+        code: Code,
     },
 }
 
@@ -205,6 +209,30 @@ fn run_chain() -> CmdResult {
     Ok(())
 }
 
+fn update(code: &Code) -> CmdResult {
+    let code_name = code.to_string();
+    let dir = match code {
+        Code::Pool => std::env::var("POOL_DIR").unwrap(),
+        Code::Gate => std::env::var("GATE_DIR").unwrap(),
+        Code::Miner => std::env::var("MINER_DIR").unwrap(),
+        Code::Distribute => std::env::var("DISTRIBUTE_DIR").unwrap(),
+        Code::All => {
+            update(&Code::Distribute)?;
+            update(&Code::Gate)?;
+            update(&Code::Miner)?;
+            update(&Code::Pool)?;
+            return Ok(());
+        }
+    };
+    let cur = std::env::current_dir().unwrap();
+    let bin_dir = cur.join(BIN_DIR);
+    run_cmd!(
+        cd $dir;
+        cargo build --release --bin $code_name;
+        mv target/release/$code_name $bin_dir;
+    )
+}
+
 fn main() -> CmdResult {
     use_builtin_cmd!(echo, info);
     init_builtin_logger();
@@ -246,6 +274,10 @@ fn main() -> CmdResult {
                     info!("tmux session killed: {}", SESSION_NODE);
                 };
             }
+        }
+        Sub::Update { code } => {
+            update(&code)?;
+            info!("code {} updated", code.to_string());
         }
     }
 
