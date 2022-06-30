@@ -2,3 +2,4 @@
 tt.sh
 /bin
 *.log
+/logs
