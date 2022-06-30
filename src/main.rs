@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cmd_lib::*;
+use cmd_lib::{*, log::info};
 use dotenv::dotenv;
 use structopt::StructOpt;
 
@@ -23,6 +23,7 @@ struct Opt {
 enum Sub {
     Restart,
     SetTmux,
+    Kill,
 }
 
 enum Code {
@@ -185,6 +186,12 @@ fn main() -> CmdResult {
         Sub::SetTmux => {
             setup_tmux()?;
         }
+        Sub::Kill => {
+            run_cmd!(
+                tmux kill-session -t $SESSION;
+            )?;
+            info!("tmux session killed: {}", SESSION);
+        },
     }
 
     Ok(())
