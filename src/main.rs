@@ -1,12 +1,15 @@
 use std::str::FromStr;
 
 use cmd_lib::*;
+use dotenv::dotenv;
 use structopt::StructOpt;
 
 const SESSION: &str = "fish";
 const WIN_POOL: &str = "pool";
 const WIN_NODE: &str = "node";
 const WIN_SERVICE: &str = "service";
+const WIN_MINER: &str = "miner";
+
 const BIN_DIR: &str = "./bin";
 
 #[derive(StructOpt)]
@@ -26,6 +29,7 @@ enum Code {
     Pool,
     Gate,
     All,
+    Miner,
     Distribute,
 }
 
@@ -50,6 +54,7 @@ impl Code {
             Code::Gate => "pool-gate",
             Code::All => "all",
             Code::Distribute => "coin-distribution",
+            Code::Miner => "noah-miner",
         }
     }
 }
@@ -104,6 +109,14 @@ fn setup_tmux() -> CmdResult {
     // build window for middleware service
     run_cmd!(
         tmux new-window -t $SESSION:2 -n $WIN_SERVICE;
+    )?;
+    // build window for miners
+    run_cmd!(
+        tmux new-window -t $SESSION:3 -n $WIN_MINER;
+    )?;
+
+    // select pool window
+    run_cmd!(
         tmux select-window -t $SESSION:$WIN_POOL
     )?;
 
@@ -116,7 +129,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
         run_cmd!(
             tmux select-window -t $SESSION:$WIN_POOL;
             tmux selectp -t $pane;
-            tmux send-keys $BIN_DIR/$bin_name C-m
+            tmux send-keys $BIN_DIR/$bin_name C-m;
         )
     };
     // run
@@ -132,6 +145,14 @@ fn run_in_tmux(bin: Code) -> CmdResult {
             run_in_tmux(Code::Distribute)?;
             run_in_tmux(Code::Pool)?;
             run_in_tmux(Code::Gate)?;
+            run_in_tmux(Code::Miner)?;
+        }
+        Code::Miner => {
+            let cmd = std::env::var("MINER_CMD").unwrap();
+            run_cmd!(
+                tmux select-window -t $SESSION:$WIN_MINER;
+                tmux send-keys $cmd C-m;
+            )?;
         }
     }
     Ok(())
@@ -142,17 +163,11 @@ fn set_config_env() {
         "DISTRIBUTION_CONFIG",
         BIN_DIR.to_string() + "/config-distribution.toml",
     );
-    std::env::set_var(
-        "FISH_POOL_CONFIG",
-        BIN_DIR.to_string() + "/fish-pool.toml",
-    );
-    std::env::set_var(
-        "GATE_CONFIG",
-        BIN_DIR.to_string() + "/pool-gate.toml",
-    );
+    std::env::set_var("FISH_POOL_CONFIG", BIN_DIR.to_string() + "/fish-pool.toml");
+    std::env::set_var("GATE_CONFIG", BIN_DIR.to_string() + "/pool-gate.toml");
 }
 
-fn run_service() -> CmdResult{
+fn run_service() -> CmdResult {
     run_cmd!(
         tmux select-window -t $SESSION:$WIN_SERVICE;
         tmux send-keys "redis-server" C-m;
@@ -164,6 +179,8 @@ fn run_service() -> CmdResult{
 fn main() -> CmdResult {
     use_builtin_cmd!(echo, info);
     init_builtin_logger();
+
+    dotenv().ok();
 
     let opt = Opt::from_args();
     set_config_env();
