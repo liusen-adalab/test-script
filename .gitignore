@@ -3,3 +3,4 @@ tt.sh
 /bin
 *.log
 /logs
+dump.rdb

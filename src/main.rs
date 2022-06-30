@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, thread, time::Duration};
 
 use cmd_lib::{
     log::{info, warn},
@@ -90,6 +90,7 @@ impl Code {
 ///     },
 ///     "sevice": {
 ///         "pane0": "redis-server"
+///         "pane1": "null"
 ///     }
 /// }
 fn setup_tmux() -> CmdResult {
@@ -119,6 +120,7 @@ fn setup_tmux() -> CmdResult {
     // build window for middleware service
     run_cmd!(
         tmux new-window -t $SESSION_FISH:2 -n $WIN_SERVICE;
+        tmux splitw -h -p 50;
     )?;
 
     // build session for blockchain network
@@ -142,9 +144,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
     let bin_name = bin.to_string();
     let run = |pane: u8| -> CmdResult {
         run_cmd!(
-            tmux select-window -t $SESSION_FISH:$WIN_POOL;
-            tmux selectp -t $pane;
-            tmux send-keys $BIN_DIR/$bin_name C-m;
+            tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane $BIN_DIR/$bin_name C-m;
         )
     };
     // run
@@ -165,8 +165,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
         Code::Miner => {
             let cmd = std::env::var("MINER_CMD").unwrap();
             run_cmd!(
-                tmux select-window -t $SESSION_FISH:$WIN_MINER;
-                tmux send-keys $cmd C-m;
+                tmux send-keys  -t $SESSION_FISH:$WIN_MINER.0 $cmd C-m;
             )?;
         }
     }
@@ -175,8 +174,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
 
 fn run_service() -> CmdResult {
     run_cmd!(
-        tmux select-window -t $SESSION_FISH:$WIN_SERVICE;
-        tmux send-keys "redis-server" C-m;
+        tmux send-keys -t $SESSION_FISH:$WIN_SERVICE.1 "redis-server" C-m;
     )?;
 
     Ok(())
@@ -189,19 +187,14 @@ fn run_chain() -> CmdResult {
     let node2 = std::env::var("NODE2").unwrap();
     let node3 = std::env::var("NODE3").unwrap();
     run_cmd!(
-        tmux select-window -t $SESSION_NODE:$WIN_NODE;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.0 $cd_to_node C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.0 $node1 C-m;
 
-        tmux selectp -t 0;
-        tmux send-keys $cd_to_node C-m;
-        tmux send-keys $node1 C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.1 $cd_to_node C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.1 $node2 C-m;
 
-        tmux selectp -t 1;
-        tmux send-keys $cd_to_node C-m;
-        tmux send-keys $node2 C-m;
-
-        tmux selectp -t 2;
-        tmux send-keys $cd_to_node C-m;
-        tmux send-keys $node3 C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.2 $cd_to_node C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.2 $node3 C-m;
     )?;
 
     info!("new chain");
@@ -250,13 +243,17 @@ fn main() -> CmdResult {
             info!("chain running");
             run_service()?;
             info!("middleware running");
+
             // run pool in tmux
             run_in_tmux(Code::All)?;
             info!("pool services running");
 
+            info!("attaching tmux...");
+            thread::sleep(Duration::from_secs(2));
             // select pool window
             run_cmd!(
                 tmux select-window -t $SESSION_FISH:$WIN_POOL;
+                tmux a -t $SESSION_FISH;
             )?;
         }
         Sub::SetTmux => {
