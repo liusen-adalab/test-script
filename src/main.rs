@@ -33,7 +33,7 @@ enum Sub {
     },
     Update {
         #[structopt(short, long)]
-        code: Code,
+        code: Vec<Code>,
     },
 }
 
@@ -226,10 +226,12 @@ fn update(code: &Code) -> CmdResult {
     };
     let cur = std::env::current_dir().unwrap();
     let bin_dir = cur.join(BIN_DIR);
+    let bin_name = bin_dir.join(code_name);
     run_cmd!(
         cd $dir;
         cargo build --release --bin $code_name;
-        mv target/release/$code_name $bin_dir;
+        rm -f $bin_name;
+        cp target/release/$code_name $bin_dir;
     )
 }
 
@@ -276,8 +278,10 @@ fn main() -> CmdResult {
             }
         }
         Sub::Update { code } => {
-            update(&code)?;
-            info!("code {} updated", code.to_string());
+            for code in code {
+                update(&code)?;
+                info!("code {} updated", code.to_string());
+            }
         }
     }
 
