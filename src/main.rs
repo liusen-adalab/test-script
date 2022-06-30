@@ -54,7 +54,6 @@ impl Code {
     }
 }
 
-
 /// .
 ///
 /// # Examples
@@ -79,7 +78,6 @@ impl Code {
 fn setup_tmux() -> CmdResult {
     // ignore error
     let _ = run_cmd!(
-        // kill previous session
         tmux kill-session -t $SESSION;
     );
     run_cmd!(
@@ -123,9 +121,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
     };
     // run
     match bin {
-        Code::Pool => {
-            run(0)?
-        }
+        Code::Pool => run(0)?,
         Code::Distribute => {
             run(1)?;
         }
@@ -141,11 +137,19 @@ fn run_in_tmux(bin: Code) -> CmdResult {
     Ok(())
 }
 
+fn set_config_env() {
+    std::env::set_var(
+        "DISTRIBUTION_CONFIG",
+        BIN_DIR.to_string() + "/config-distribution.toml",
+    );
+}
+
 fn main() -> CmdResult {
     use_builtin_cmd!(echo, info);
     init_builtin_logger();
 
     let opt = Opt::from_args();
+    set_config_env();
     match opt.cmd {
         Sub::Restart => {
             setup_tmux()?;
@@ -159,3 +163,6 @@ fn main() -> CmdResult {
 
     Ok(())
 }
+
+#[test]
+fn test() {}
