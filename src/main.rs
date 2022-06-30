@@ -158,15 +158,6 @@ fn run_in_tmux(bin: Code) -> CmdResult {
     Ok(())
 }
 
-fn set_config_env() {
-    std::env::set_var(
-        "DISTRIBUTION_CONFIG",
-        BIN_DIR.to_string() + "/config-distribution.toml",
-    );
-    std::env::set_var("FISH_POOL_CONFIG", BIN_DIR.to_string() + "/fish-pool.toml");
-    std::env::set_var("GATE_CONFIG", BIN_DIR.to_string() + "/pool-gate.toml");
-}
-
 fn run_service() -> CmdResult {
     run_cmd!(
         tmux select-window -t $SESSION:$WIN_SERVICE;
@@ -183,7 +174,6 @@ fn main() -> CmdResult {
     dotenv().ok();
 
     let opt = Opt::from_args();
-    set_config_env();
     match opt.cmd {
         Sub::Restart => {
             setup_tmux()?;
