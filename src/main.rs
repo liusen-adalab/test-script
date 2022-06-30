@@ -1,10 +1,14 @@
 use std::str::FromStr;
 
-use cmd_lib::{log::info, *};
+use cmd_lib::{
+    log::{info, warn},
+    *,
+};
 use dotenv::dotenv;
 use structopt::StructOpt;
 
-const SESSION: &str = "fish";
+const SESSION_FISH: &str = "fish";
+const SESSION_NODE: &str = "node";
 const WIN_POOL: &str = "pool";
 const WIN_NODE: &str = "node";
 const WIN_SERVICE: &str = "service";
@@ -23,7 +27,10 @@ struct Opt {
 enum Sub {
     Restart,
     SetTmux,
-    Kill,
+    Kill {
+        #[structopt(short)]
+        node: bool,
+    },
 }
 
 enum Code {
@@ -84,15 +91,15 @@ impl Code {
 fn setup_tmux() -> CmdResult {
     // ignore error
     let _ = run_cmd!(
-        tmux kill-session -t $SESSION;
+        tmux kill-session -t $SESSION_FISH;
     );
     run_cmd!(
-        tmux new-session -d -s $SESSION;
+        tmux new-session -d -s $SESSION_FISH;
         info "session setted";
     )?;
     // build window for pool service
     run_cmd!(
-        tmux rename-window -t "fish:0" $WIN_POOL;
+        tmux rename-window -t $SESSION_FISH:0 $WIN_POOL;
         tmux splitw -h -p 50;
         tmux splitw -v -p 70;
         tmux selectp -t 0;
@@ -100,26 +107,29 @@ fn setup_tmux() -> CmdResult {
         info "win for pool";
     )?;
 
-    // build window for blockchain network
+    // build window for miners
     run_cmd!(
-        tmux new-window -t $SESSION:1 -n $WIN_NODE;
-        tmux splitw -h -p 50;
-        tmux splitw -v -p 20;
+        tmux new-window -t $SESSION_FISH:1 -n $WIN_MINER;
     )?;
 
     // build window for middleware service
     run_cmd!(
-        tmux new-window -t $SESSION:2 -n $WIN_SERVICE;
-    )?;
-    // build window for miners
-    run_cmd!(
-        tmux new-window -t $SESSION:3 -n $WIN_MINER;
+        tmux new-window -t $SESSION_FISH:2 -n $WIN_SERVICE;
     )?;
 
-    // select pool window
-    run_cmd!(
-        tmux select-window -t $SESSION:$WIN_POOL
-    )?;
+    // build session for blockchain network
+    // let _ = run_cmd!(
+    //     tmux kill-session -t $SESSION_NODE;
+    // );
+    let result = run_cmd!(
+        tmux new-session -d -s $SESSION_NODE;
+        tmux rename-window -t $SESSION_NODE:0 $WIN_NODE;
+        tmux splitw -h -p 50;
+        tmux splitw -v -p 20;
+    );
+    if let Err(_) = result {
+        warn!("blockchain network has been setup");
+    }
 
     Ok(())
 }
@@ -128,7 +138,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
     let bin_name = bin.to_string();
     let run = |pane: u8| -> CmdResult {
         run_cmd!(
-            tmux select-window -t $SESSION:$WIN_POOL;
+            tmux select-window -t $SESSION_FISH:$WIN_POOL;
             tmux selectp -t $pane;
             tmux send-keys $BIN_DIR/$bin_name C-m;
         )
@@ -151,7 +161,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
         Code::Miner => {
             let cmd = std::env::var("MINER_CMD").unwrap();
             run_cmd!(
-                tmux select-window -t $SESSION:$WIN_MINER;
+                tmux select-window -t $SESSION_FISH:$WIN_MINER;
                 tmux send-keys $cmd C-m;
             )?;
         }
@@ -161,7 +171,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
 
 fn run_service() -> CmdResult {
     run_cmd!(
-        tmux select-window -t $SESSION:$WIN_SERVICE;
+        tmux select-window -t $SESSION_FISH:$WIN_SERVICE;
         tmux send-keys "redis-server" C-m;
     )?;
 
@@ -175,7 +185,7 @@ fn run_chain() -> CmdResult {
     let node2 = std::env::var("NODE2").unwrap();
     let node3 = std::env::var("NODE3").unwrap();
     run_cmd!(
-        tmux select-window -t $SESSION:$WIN_NODE;
+        tmux select-window -t $SESSION_NODE:$WIN_NODE;
 
         tmux selectp -t 0;
         tmux send-keys $cd_to_node C-m;
@@ -190,6 +200,8 @@ fn run_chain() -> CmdResult {
         tmux send-keys $node3 C-m;
     )?;
 
+    info!("new chain");
+
     Ok(())
 }
 
@@ -203,19 +215,37 @@ fn main() -> CmdResult {
     match opt.cmd {
         Sub::Restart => {
             setup_tmux()?;
+            info!("tmux built");
             run_chain()?;
+            info!("chain running");
             run_service()?;
+            info!("middleware running");
             // run pool in tmux
             run_in_tmux(Code::All)?;
+            info!("pool services running");
+
+            // select pool window
+            run_cmd!(
+                tmux select-window -t $SESSION_FISH:$WIN_POOL;
+            )?;
         }
         Sub::SetTmux => {
             setup_tmux()?;
         }
-        Sub::Kill => {
-            run_cmd!(
-                tmux kill-session -t $SESSION;
-            )?;
-            info!("tmux session killed: {}", SESSION);
+        Sub::Kill { node } => {
+            if run_cmd!(tmux kill-session -t $SESSION_FISH;).is_err() {
+                info!("session {} not exist", SESSION_FISH);
+            } else {
+                info!("tmux session killed: {}", SESSION_FISH);
+            };
+
+            if node {
+                if run_cmd!(tmux kill-session -t $SESSION_NODE;).is_err() {
+                    info!("session {} not exist", SESSION_FISH);
+                } else {
+                    info!("tmux session killed: {}", SESSION_NODE);
+                };
+            }
         }
     }
 
