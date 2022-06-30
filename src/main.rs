@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cmd_lib::{*, log::info};
+use cmd_lib::{log::info, *};
 use dotenv::dotenv;
 use structopt::StructOpt;
 
@@ -168,6 +168,31 @@ fn run_service() -> CmdResult {
     Ok(())
 }
 
+fn run_chain() -> CmdResult {
+    let node_dir = std::env::var("IRON_DIR").unwrap();
+    let cd_to_node = "cd ".to_string() + &node_dir;
+    let node1 = std::env::var("NODE1").unwrap();
+    let node2 = std::env::var("NODE2").unwrap();
+    let node3 = std::env::var("NODE3").unwrap();
+    run_cmd!(
+        tmux select-window -t $SESSION:$WIN_NODE;
+
+        tmux selectp -t 0;
+        tmux send-keys $cd_to_node C-m;
+        tmux send-keys $node1 C-m;
+
+        tmux selectp -t 1;
+        tmux send-keys $cd_to_node C-m;
+        tmux send-keys $node2 C-m;
+
+        tmux selectp -t 2;
+        tmux send-keys $cd_to_node C-m;
+        tmux send-keys $node3 C-m;
+    )?;
+
+    Ok(())
+}
+
 fn main() -> CmdResult {
     use_builtin_cmd!(echo, info);
     init_builtin_logger();
@@ -178,9 +203,9 @@ fn main() -> CmdResult {
     match opt.cmd {
         Sub::Restart => {
             setup_tmux()?;
-            // run service
+            run_chain()?;
             run_service()?;
-            // run in tmux
+            // run pool in tmux
             run_in_tmux(Code::All)?;
         }
         Sub::SetTmux => {
@@ -191,7 +216,7 @@ fn main() -> CmdResult {
                 tmux kill-session -t $SESSION;
             )?;
             info!("tmux session killed: {}", SESSION);
-        },
+        }
     }
 
     Ok(())
