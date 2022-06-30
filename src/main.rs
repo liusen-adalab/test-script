@@ -1,11 +1,7 @@
-use std::{io, path::Path, str::FromStr};
+use std::{io, str::FromStr};
 
 use cmd_lib::*;
 use structopt::StructOpt;
-
-const COIN_URL: &str = "http://119.91.143.43:29999/NoahPool/coin-distribution.git";
-const POOL_URL: &str = "http://119.91.143.43:29999/MinerPool/backend-pools.git";
-const IRON_URL: &str = "https://github.com/iron-fish/ironfish.git";
 
 const SESSION: &str = "fish";
 const WIN_POOL: &str = "pool";
@@ -23,10 +19,6 @@ struct Opt {
 #[derive(StructOpt)]
 enum Sub {
     Restart,
-    Update {
-        #[structopt(short, default_value = "all")]
-        name: Code,
-    },
     SetTmux,
 }
 
@@ -62,61 +54,6 @@ impl Code {
     }
 }
 
-fn setup_dirs() -> CmdResult {
-    let exists = |path: &'static str| -> bool { Path::new(path).exists() };
-    let codes = [
-        Code::Pool.to_string(),
-        Code::Gate.to_string(),
-        Code::Distribute.to_string(),
-    ];
-    for code in codes {
-        if !exists(code) {
-            run_cmd!(
-                git submodule add $POOL_URL $code
-                git submodule update --init --recursive
-            )?;
-        }
-    }
-    Ok(())
-}
-
-fn update_code(code: Code) -> CmdResult {
-    let name = code.to_string();
-    run_cmd!(
-        cd $name;
-        git pull origin test;
-        cargo build --release;
-    )?;
-
-    std::env::set_current_dir(name)?;
-    let bin_name = get_crate_name()?;
-    run_cmd!(
-        mv ./target/release/$bin_name ../$BIN_DIR/$name
-    )?;
-    std::env::set_current_dir("../")?;
-    Ok(())
-}
-
-fn get_crate_name() -> Result<String, io::Error> {
-    let output = run_fun!(
-        cargo metadata --format-version=1 --no-deps
-    )?;
-
-    let mut output = output.split(":");
-    println!("{}", output.next().unwrap());
-    while output.next() != Some(r#"[{"name""#) {}
-    let mut name = output
-        .next()
-        .unwrap()
-        .to_string()
-        .split(",")
-        .next()
-        .unwrap()
-        .to_string();
-    name.remove(0);
-    name.remove(name.len() - 1);
-    Ok(name)
-}
 
 /// .
 ///
@@ -140,14 +77,15 @@ fn get_crate_name() -> Result<String, io::Error> {
 ///     }
 /// }
 fn setup_tmux() -> CmdResult {
-    // setup session
     // ignore error
     let _ = run_cmd!(
         // kill previous session
         tmux kill-session -t $SESSION;
+    );
+    run_cmd!(
         tmux new-session -d -s $SESSION;
         info "session setted";
-    );
+    )?;
     // build window for pool service
     run_cmd!(
         tmux rename-window -t "fish:0" $WIN_POOL;
@@ -168,6 +106,7 @@ fn setup_tmux() -> CmdResult {
     // build window for middleware service
     run_cmd!(
         tmux new-window -t $SESSION:2 -n $WIN_SERVICE;
+        tmux select-window -t $SESSION:$WIN_POOL
     )?;
 
     Ok(())
@@ -175,12 +114,30 @@ fn setup_tmux() -> CmdResult {
 
 fn run_in_tmux(bin: Code) -> CmdResult {
     let bin_name = bin.to_string();
+    let run = |pane: u8| -> CmdResult {
+        run_cmd!(
+            tmux select-window -t $SESSION:$WIN_POOL;
+            tmux selectp -t $pane;
+            tmux send-keys $BIN_DIR/$bin_name C-m
+        )
+    };
     // run
-    run_cmd!(
-        tmux select-window -t $SESSION:$WIN_SERVICE;
-        tmux selectp -t 0;
-        tmux send-keys $BIN_DIR/$bin_name C-m
-    )?;
+    match bin {
+        Code::Pool => {
+            run(0)?
+        }
+        Code::Distribute => {
+            run(1)?;
+        }
+        Code::Gate => {
+            run(2)?;
+        }
+        Code::All => {
+            run_in_tmux(Code::Distribute)?;
+            run_in_tmux(Code::Pool)?;
+            run_in_tmux(Code::Gate)?;
+        }
+    }
     Ok(())
 }
 
@@ -191,13 +148,9 @@ fn main() -> CmdResult {
     let opt = Opt::from_args();
     match opt.cmd {
         Sub::Restart => {
-            // update code
-            update_code(Code::All)?;
             setup_tmux()?;
             // run in tmux
-        }
-        Sub::Update { name } => {
-            update_code(name)?;
+            run_in_tmux(Code::Distribute)?;
         }
         Sub::SetTmux => {
             setup_tmux()?;
@@ -205,9 +158,4 @@ fn main() -> CmdResult {
     }
 
     Ok(())
-}
-
-#[test]
-fn test() {
-    println!("{}", Path::new("target").exists());
 }
