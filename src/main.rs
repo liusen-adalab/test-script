@@ -198,9 +198,9 @@ fn run_chain() -> CmdResult {
     let node2 = std::env::var("NODE2").unwrap();
     let node3 = std::env::var("NODE3").unwrap();
     run_cmd!(
-        tmux send-keys -t $SESSION_NODE:$WIN_NODE.0 $node1 C-m;
-        tmux send-keys -t $SESSION_NODE:$WIN_NODE.1 $node2 C-m;
-        tmux send-keys -t $SESSION_NODE:$WIN_NODE.2 $node3 C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.1 $node1 C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.2 $node2 C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.3 $node3 C-m;
     )?;
 
     info!("new chain");
