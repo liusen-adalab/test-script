@@ -7,3 +7,7 @@
     - [ ] sudo apt install libmysqlclient-dev
     - [ ] sudo apt install pkg-config
 - [ ] use git to update
+- [ ] more convenient tmux layout
+
+# Bug to Fix
+- [ ] miner crash at restart
