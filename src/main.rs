@@ -253,6 +253,8 @@ fn main() -> CmdResult {
     init_builtin_logger();
 
     dotenv().ok();
+    let self_dir = env::var("SELF").unwrap();
+    env::set_current_dir(self_dir).unwrap();
 
     let opt = Opt::from_args();
     match opt.cmd {
