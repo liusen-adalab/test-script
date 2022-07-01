@@ -318,7 +318,7 @@ fn restart() -> Result<(), std::io::Error> {
     run_in_tmux(Code::All)?;
     info!("pool services running");
     info!("attaching tmux...");
-    thread::sleep(Duration::from_secs(2));
+    thread::sleep(Duration::from_secs(1));
     run_cmd!(
         tmux select-window -t $SESSION_FISH:$WIN_POOL;
         tmux a -t $SESSION_FISH;
