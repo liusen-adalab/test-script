@@ -1,4 +1,4 @@
-use std::{str::FromStr, thread, time::Duration};
+use std::{str::FromStr, thread, time::Duration, path::Path};
 
 use cmd_lib::{
     log::{info, warn},
@@ -271,15 +271,16 @@ fn main() -> CmdResult {
 
             if node {
                 if run_cmd!(tmux kill-session -t $SESSION_NODE;).is_err() {
-                    info!("session {} not exist", SESSION_FISH);
+                    info!("session {} not exist", SESSION_NODE);
                 } else {
                     info!("tmux session killed: {}", SESSION_NODE);
                 };
                 let node_db_dirs = std::env::var("NODE_DATA").unwrap();
                 let node_db_dirs: Vec<&str> = node_db_dirs.split(" ").collect();
-                // println!("{}", node_db_dirs);
                 // delete blockchain data
                 for dir in node_db_dirs {
+                    let dir = Path::new(dir).canonicalize()?;
+                    let dir = dir.display();
                     match run_cmd!(rm -rf $dir) {
                         Ok(_) => {
                             info!("iron data directories {} deleted", dir);
@@ -305,10 +306,4 @@ fn main() -> CmdResult {
 #[test]
 fn test() {
     dotenv().ok();
-
-    let reset_cmd = std::env::var("RESET_NODE").unwrap();
-    println!("{}", reset_cmd);
-
-    let cmd = "a.txt";
-    run_cmd!(rm $cmd).unwrap();
 }
