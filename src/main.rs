@@ -1,4 +1,4 @@
-use std::{str::FromStr, thread, time::Duration, path::Path};
+use std::{str::FromStr, thread, time::Duration};
 
 use cmd_lib::{
     log::{info, warn},
@@ -127,14 +127,19 @@ fn setup_tmux() -> CmdResult {
     )?;
 
     // build session for blockchain network
-    // let _ = run_cmd!(
-    //     tmux kill-session -t $SESSION_NODE;
-    // );
+    let node_dir = std::env::var("IRON_DIR").unwrap();
+    let cd_to_node = "cd ".to_string() + &node_dir;
     let result = run_cmd!(
         tmux new-session -d -s $SESSION_NODE;
         tmux rename-window -t $SESSION_NODE:0 $WIN_NODE;
         tmux splitw -h -p 50;
-        tmux splitw -v -p 20;
+        tmux splitw -v -p 100;
+        tmux splitw -v -p 300;
+        
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.0 $cd_to_node C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.1 $cd_to_node C-m;
+        1mux send-keys -t $SESSION_NODE:$WIN_NODE.2 $cd_to_node C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.3 $cd_to_node C-m;
     );
     if let Err(_) = result {
         warn!("blockchain network has been setup");
@@ -184,19 +189,12 @@ fn run_service() -> CmdResult {
 }
 
 fn run_chain() -> CmdResult {
-    let node_dir = std::env::var("IRON_DIR").unwrap();
-    let cd_to_node = "cd ".to_string() + &node_dir;
     let node1 = std::env::var("NODE1").unwrap();
     let node2 = std::env::var("NODE2").unwrap();
     let node3 = std::env::var("NODE3").unwrap();
     run_cmd!(
-        tmux send-keys -t $SESSION_NODE:$WIN_NODE.0 $cd_to_node C-m;
         tmux send-keys -t $SESSION_NODE:$WIN_NODE.0 $node1 C-m;
-
-        tmux send-keys -t $SESSION_NODE:$WIN_NODE.1 $cd_to_node C-m;
         tmux send-keys -t $SESSION_NODE:$WIN_NODE.1 $node2 C-m;
-
-        tmux send-keys -t $SESSION_NODE:$WIN_NODE.2 $cd_to_node C-m;
         tmux send-keys -t $SESSION_NODE:$WIN_NODE.2 $node3 C-m;
     )?;
 
@@ -240,24 +238,7 @@ fn main() -> CmdResult {
     let opt = Opt::from_args();
     match opt.cmd {
         Sub::Restart => {
-            setup_tmux()?;
-            info!("tmux built");
-            run_chain()?;
-            info!("chain running");
-            run_service()?;
-            info!("middleware running");
-
-            // run pool in tmux
-            run_in_tmux(Code::All)?;
-            info!("pool services running");
-
-            info!("attaching tmux...");
-            thread::sleep(Duration::from_secs(2));
-            // select pool window
-            run_cmd!(
-                tmux select-window -t $SESSION_FISH:$WIN_POOL;
-                tmux a -t $SESSION_FISH;
-            )?;
+            restart()?;
         }
         Sub::SetTmux => {
             setup_tmux()?;
@@ -279,8 +260,6 @@ fn main() -> CmdResult {
                 let node_db_dirs: Vec<&str> = node_db_dirs.split(" ").collect();
                 // delete blockchain data
                 for dir in node_db_dirs {
-                    let dir = Path::new(dir).canonicalize()?;
-                    let dir = dir.display();
                     match run_cmd!(rm -rf $dir) {
                         Ok(_) => {
                             info!("iron data directories {} deleted", dir);
@@ -300,6 +279,24 @@ fn main() -> CmdResult {
         }
     }
 
+    Ok(())
+}
+
+fn restart() -> Result<(), std::io::Error> {
+    setup_tmux()?;
+    info!("tmux built");
+    run_chain()?;
+    info!("chain running");
+    run_service()?;
+    info!("middleware running");
+    run_in_tmux(Code::All)?;
+    info!("pool services running");
+    info!("attaching tmux...");
+    thread::sleep(Duration::from_secs(2));
+    run_cmd!(
+        tmux select-window -t $SESSION_FISH:$WIN_POOL;
+        tmux a -t $SESSION_FISH;
+    )?;
     Ok(())
 }
 
