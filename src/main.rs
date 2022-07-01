@@ -1,4 +1,4 @@
-use std::{str::FromStr, thread, time::Duration};
+use std::{env, str::FromStr, thread, time::Duration};
 
 use cmd_lib::{
     log::{info, warn},
@@ -32,10 +32,10 @@ enum Sub {
     /// 关闭全部矿池相关程序
     Kill {
         /// 是否关闭区块链网络
-        code: Option<String>
+        code: Option<String>,
     },
     /// 更新代码
-    /// 支持 pool, gate, coin, all
+    /// 支持 pool, gate, coin, all, self
     Update { code: Vec<Code> },
 }
 
@@ -45,6 +45,7 @@ enum Code {
     All,
     Miner,
     Distribute,
+    Me,
 }
 
 impl FromStr for Code {
@@ -56,6 +57,7 @@ impl FromStr for Code {
             "gate" => Ok(Code::Gate),
             "all" => Ok(Code::All),
             "coin" | "distribute" => Ok(Code::Distribute),
+            "self" | "me" => Ok(Code::Me),
             _ => Err("not support"),
         }
     }
@@ -69,6 +71,7 @@ impl Code {
             Code::All => "all",
             Code::Distribute => "coin-distribution",
             Code::Miner => "noah-miner",
+            Code::Me => "self",
         }
     }
 }
@@ -134,7 +137,7 @@ fn setup_tmux() -> CmdResult {
         tmux splitw -h -p 50;
         tmux splitw -v -p 100;
         tmux splitw -v -p 300;
-        
+
         tmux send-keys -t $SESSION_NODE:$WIN_NODE.0 $cd_to_node C-m;
         tmux send-keys -t $SESSION_NODE:$WIN_NODE.1 $cd_to_node C-m;
         1mux send-keys -t $SESSION_NODE:$WIN_NODE.2 $cd_to_node C-m;
@@ -175,6 +178,9 @@ fn run_in_tmux(bin: Code) -> CmdResult {
                 tmux send-keys  -t $SESSION_FISH:$WIN_MINER.0 $cmd C-m;
             )?;
         }
+        Code::Me => {
+            panic!("don't run `setup` in tmux");
+        }
     }
     Ok(())
 }
@@ -209,6 +215,16 @@ fn update(code: &Code) -> CmdResult {
         Code::Gate => std::env::var("GATE_DIR").unwrap(),
         Code::Miner => std::env::var("MINER_DIR").unwrap(),
         Code::Distribute => std::env::var("DISTRIBUTE_DIR").unwrap(),
+        Code::Me => {
+            let self_dir = env::var("SELF").unwrap();
+            let cargo_home = env::var("CARGO_HOME").unwrap() + "/bin";
+            let target = self_dir.clone() + "/target/release/setup";
+            return run_cmd!(
+                cd $self_dir;
+                cargo build --release;
+                mv $target $cargo_home;
+            );
+        }
         Code::All => {
             update(&Code::Distribute)?;
             update(&Code::Gate)?;
