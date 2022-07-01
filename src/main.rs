@@ -1,4 +1,4 @@
-use std::{str::FromStr, thread, time::Duration};
+use std::{str::FromStr, thread, time::Duration, path::{Path, PathBuf}};
 
 use cmd_lib::{
     log::{info, warn},
@@ -25,12 +25,18 @@ struct Opt {
 
 #[derive(StructOpt)]
 enum Sub {
+    /// 重启全部矿池相关的程序
     Restart,
+    /// 建立 tmux 框架
     SetTmux,
+    /// 关闭全部矿池相关程序
     Kill {
+        /// 是否关闭区块链网络
         #[structopt(short)]
         node: bool,
     },
+    /// 更新代码
+    /// 支持 pool, gate, coin, all
     Update {
         #[structopt(short, long)]
         code: Vec<Code>,
@@ -286,4 +292,10 @@ fn main() -> CmdResult {
 }
 
 #[test]
-fn test() {}
+fn test() {
+    dotenv().ok();
+    let dir = std::env::var("POOL_DIR").unwrap();
+    println!("{}", dir);
+    let dir = PathBuf::from_str(&dir).unwrap().to_path_buf();
+    println!("{}", dir.display());
+}
