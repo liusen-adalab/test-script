@@ -217,7 +217,7 @@ fn update(code: &Code) -> CmdResult {
         Code::Distribute => std::env::var("DISTRIBUTE_DIR").unwrap(),
         Code::Me => {
             let self_dir = env::var("SELF").unwrap();
-            let cargo_home = env::var("CARGO_HOME").unwrap() + "/bin";
+            let cargo_home = env::var("HOME").unwrap() + ".cargo/bin";
             let target = self_dir.clone() + "/target/release/setup";
             let env_path = self_dir.clone() + "/.env";
             let env_target = env::var("HOME").unwrap() + "/.env";
