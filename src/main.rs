@@ -277,9 +277,14 @@ fn main() -> CmdResult {
                 };
                 let reset_cmd = std::env::var("RESET_NODE").unwrap();
                 // delete blockchain data
-                let _ = run_cmd!(
-                    $reset_cmd;
-                );
+                match run_cmd!($reset_cmd;) {
+                    Ok(_) => {
+                        info!("irong data directories deleted")
+                    }
+                    Err(err) => {
+                        warn!("failed to delete iron data: {}", err);
+                    }
+                }
             }
         }
         Sub::Update { code } => {
