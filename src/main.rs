@@ -32,8 +32,7 @@ enum Sub {
     /// 关闭全部矿池相关程序
     Kill {
         /// 是否关闭区块链网络
-        #[structopt(short)]
-        node: bool,
+        code: Option<String>
     },
     /// 更新代码
     /// 支持 pool, gate, coin, all
@@ -243,14 +242,14 @@ fn main() -> CmdResult {
         Sub::SetTmux => {
             setup_tmux()?;
         }
-        Sub::Kill { node } => {
+        Sub::Kill { code } => {
             if run_cmd!(tmux kill-session -t $SESSION_FISH;).is_err() {
                 info!("session {} not exist", SESSION_FISH);
             } else {
                 info!("tmux session killed: {}", SESSION_FISH);
             };
 
-            if node {
+            if code == Some("all".to_string()) {
                 if run_cmd!(tmux kill-session -t $SESSION_NODE;).is_err() {
                     info!("session {} not exist", SESSION_NODE);
                 } else {
