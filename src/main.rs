@@ -139,9 +139,13 @@ fn setup_tmux() -> CmdResult {
         tmux splitw -v -p 300;
 
         tmux send-keys -t $SESSION_NODE:$WIN_NODE.0 $cd_to_node C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.0 "clear" C-m;
         tmux send-keys -t $SESSION_NODE:$WIN_NODE.1 $cd_to_node C-m;
-        1mux send-keys -t $SESSION_NODE:$WIN_NODE.2 $cd_to_node C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.1 "clear" C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.2 $cd_to_node C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.2 "clear" C-m;
         tmux send-keys -t $SESSION_NODE:$WIN_NODE.3 $cd_to_node C-m;
+        tmux send-keys -t $SESSION_NODE:$WIN_NODE.3 "clear" C-m;
     );
     if let Err(_) = result {
         warn!("blockchain network has been setup");
