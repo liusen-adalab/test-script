@@ -17,7 +17,14 @@ screen -R newscreen
 ```
 
 ## Iron
-- yarn start config:show
-- yarn start config:set enableRpcTcp true
-- yarn start status 
-- yarn start miners:start
+- config
+    - yarn start config:show --datadir ~/.ironfish-1
+    - yarn start config:set enableRpcTcp true
+- miner
+    - yarn start miners:start yarn start chain:show --datadir ~/.ironfish-1 -t 1
+- chain
+    - yarn start chain:show --datadir ~/.ironfish-1
+    - yarn start blocks:show --datadir ~/.ironfish-1 <HASH>
+- genesis
+    - yarn start  chain:genesisblock --difficulty=60000000 --datadir ~/.ironfish-1 
+    - yarn start  chain:genesisblock --difficulty=131072 --datadir ~/.ironfish-1 
