@@ -275,14 +275,18 @@ fn main() -> CmdResult {
                 } else {
                     info!("tmux session killed: {}", SESSION_NODE);
                 };
-                let node_db_dir = std::env::var("NODE_DATA").unwrap();
+                let node_db_dirs = std::env::var("NODE_DATA").unwrap();
+                let node_db_dirs: Vec<&str> = node_db_dirs.split(" ").collect();
+                // println!("{}", node_db_dirs);
                 // delete blockchain data
-                match run_cmd!(rm -rf $node_db_dir;) {
-                    Ok(_) => {
-                        info!("irong data directories deleted")
-                    }
-                    Err(err) => {
-                        warn!("failed to delete iron data: {}", err);
+                for dir in node_db_dirs {
+                    match run_cmd!(rm -rf $dir) {
+                        Ok(_) => {
+                            info!("iron data directories {} deleted", dir);
+                        }
+                        Err(err) => {
+                            warn!("failed to delete iron data: {}", err);
+                        }
                     }
                 }
             }
@@ -304,7 +308,7 @@ fn test() {
 
     let reset_cmd = std::env::var("RESET_NODE").unwrap();
     println!("{}", reset_cmd);
-    
+
     let cmd = "a.txt";
     run_cmd!(rm $cmd).unwrap();
 }
