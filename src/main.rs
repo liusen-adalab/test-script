@@ -223,6 +223,7 @@ fn update(code: &Code) -> CmdResult {
             let env_target = env::var("HOME").unwrap() + "/.env";
             return run_cmd!(
                 cd $self_dir;
+                git pull;
                 cargo build --release;
                 mv $target $cargo_home;
                 rm -f $env_target;
