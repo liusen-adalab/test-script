@@ -8,6 +8,8 @@
     - [ ] sudo apt install pkg-config
 - [ ] use git to update
 - [ ] more convenient tmux layout
+- [x] support to run in any directory
 
 # Bug to Fix
 - [ ] miner crash at restart
+- [ ] determine if running in tmux
