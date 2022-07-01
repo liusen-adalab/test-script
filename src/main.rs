@@ -219,10 +219,14 @@ fn update(code: &Code) -> CmdResult {
             let self_dir = env::var("SELF").unwrap();
             let cargo_home = env::var("CARGO_HOME").unwrap() + "/bin";
             let target = self_dir.clone() + "/target/release/setup";
+            let env_path = self_dir.clone() + "/.env";
+            let env_target = env::var("HOME").unwrap() + "/.env";
             return run_cmd!(
                 cd $self_dir;
                 cargo build --release;
                 mv $target $cargo_home;
+                rm -f $env_target;
+                cp $env_path $env_target
             );
         }
         Code::All => {
