@@ -1,4 +1,4 @@
-use std::{str::FromStr, thread, time::Duration, path::{Path, PathBuf}};
+use std::{str::FromStr, thread, time::Duration};
 
 use cmd_lib::{
     log::{info, warn},
@@ -37,9 +37,7 @@ enum Sub {
     },
     /// 更新代码
     /// 支持 pool, gate, coin, all
-    Update {
-        code: Vec<Code>,
-    },
+    Update { code: Vec<Code> },
 }
 
 enum Code {
@@ -277,6 +275,11 @@ fn main() -> CmdResult {
                 } else {
                     info!("tmux session killed: {}", SESSION_NODE);
                 };
+                let reset_cmd = std::env::var("RESET_NODE").unwrap();
+                // delete blockchain data
+                let _ = run_cmd!(
+                    $reset_cmd;
+                );
             }
         }
         Sub::Update { code } => {
@@ -291,10 +294,4 @@ fn main() -> CmdResult {
 }
 
 #[test]
-fn test() {
-    dotenv().ok();
-    let dir = std::env::var("POOL_DIR").unwrap();
-    println!("{}", dir);
-    let dir = PathBuf::from_str(&dir).unwrap().to_path_buf();
-    println!("{}", dir.display());
-}
+fn test() {}
