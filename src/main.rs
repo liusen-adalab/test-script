@@ -275,9 +275,9 @@ fn main() -> CmdResult {
                 } else {
                     info!("tmux session killed: {}", SESSION_NODE);
                 };
-                let reset_cmd = std::env::var("RESET_NODE").unwrap();
+                let node_db_dir = std::env::var("NODE_DATA").unwrap();
                 // delete blockchain data
-                match run_cmd!($reset_cmd;) {
+                match run_cmd!(rm -rf $node_db_dir;) {
                     Ok(_) => {
                         info!("irong data directories deleted")
                     }
@@ -299,4 +299,12 @@ fn main() -> CmdResult {
 }
 
 #[test]
-fn test() {}
+fn test() {
+    dotenv().ok();
+
+    let reset_cmd = std::env::var("RESET_NODE").unwrap();
+    println!("{}", reset_cmd);
+    
+    let cmd = "a.txt";
+    run_cmd!(rm $cmd).unwrap();
+}
