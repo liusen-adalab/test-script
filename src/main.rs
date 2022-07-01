@@ -38,7 +38,6 @@ enum Sub {
     /// 更新代码
     /// 支持 pool, gate, coin, all
     Update {
-        #[structopt(short, long)]
         code: Vec<Code>,
     },
 }
