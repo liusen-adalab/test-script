@@ -14,8 +14,6 @@ const WIN_NODE: &str = "node";
 const WIN_SERVICE: &str = "service";
 const WIN_MINER: &str = "miner";
 
-const BIN_DIR: &str = "bin";
-
 #[derive(StructOpt)]
 #[structopt(name = "dd_test", about = "Get disk read bandwidth.")]
 struct Opt {
@@ -72,6 +70,17 @@ impl Code {
             Code::Distribute => "coin-distribution",
             Code::Miner => "noah-miner",
             Code::Me => "self",
+        }
+    }
+
+    fn get_code_dir(&self) -> String {
+        match self {
+            Code::Pool => std::env::var("POOL_DIR").unwrap(),
+            Code::Gate => std::env::var("GATE_DIR").unwrap(),
+            Code::Miner => std::env::var("MINER_DIR").unwrap(),
+            Code::Distribute => std::env::var("DISTRIBUTE_DIR").unwrap(),
+            Code::Me => env::var("SELF").unwrap(),
+            Code::All => "all".to_string(),
         }
     }
 }
@@ -155,10 +164,12 @@ fn setup_tmux() -> CmdResult {
 }
 
 fn run_in_tmux(bin: Code) -> CmdResult {
-    let bin_name = bin.to_string();
+    let dir = bin.get_code_dir();
     let run = |pane: u8| -> CmdResult {
+        let cmd = "cargo run --release";
         run_cmd!(
-            tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane $BIN_DIR/$bin_name C-m;
+            tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane "cd $dir" C-m;
+            tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane $cmd C-m;
         )
     };
     // run
@@ -215,10 +226,6 @@ fn run_chain() -> CmdResult {
 fn update(code: &Code) -> CmdResult {
     let code_name = code.to_string();
     let dir = match code {
-        Code::Pool => std::env::var("POOL_DIR").unwrap(),
-        Code::Gate => std::env::var("GATE_DIR").unwrap(),
-        Code::Miner => std::env::var("MINER_DIR").unwrap(),
-        Code::Distribute => std::env::var("DISTRIBUTE_DIR").unwrap(),
         Code::Me => {
             let self_dir = env::var("SELF").unwrap();
             let cargo_home = env::var("HOME").unwrap() + "/.cargo/bin";
@@ -241,16 +248,14 @@ fn update(code: &Code) -> CmdResult {
             update(&Code::Pool)?;
             return Ok(());
         }
+        _ => {
+            code.get_code_dir()
+        }
     };
-    let cur = std::env::current_dir().unwrap();
-    let bin_dir = cur.join(BIN_DIR);
-    let bin_name = bin_dir.join(code_name);
     run_cmd!(
         cd $dir;
         git pull origin test;
         cargo build --release --bin $code_name;
-        rm -f $bin_name;
-        cp target/release/$code_name $bin_dir;
     )
 }
 
