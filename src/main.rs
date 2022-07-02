@@ -247,6 +247,7 @@ fn update(code: &Code) -> CmdResult {
     let bin_name = bin_dir.join(code_name);
     run_cmd!(
         cd $dir;
+        git pull origin test;
         cargo build --release --bin $code_name;
         rm -f $bin_name;
         cp target/release/$code_name $bin_dir;
