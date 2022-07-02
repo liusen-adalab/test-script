@@ -283,6 +283,9 @@ fn main() -> CmdResult {
             };
 
             if code == Some("all".to_string()) {
+                // clear redis. ignore error
+                let _ = run_cmd!(redis-cli flushall);
+
                 if run_cmd!(tmux kill-session -t $SESSION_NODE;).is_err() {
                     info!("session {} not exist", SESSION_NODE);
                 } else {
