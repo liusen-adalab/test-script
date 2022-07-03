@@ -175,7 +175,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
         run_cmd!(
             tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane "cd $dir" C-m;
             tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane $build C-m;
-            tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane "clear" C-m;
+            tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane "tput reset" C-m;
             tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane $cmd C-m;
         )
     };
