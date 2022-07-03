@@ -62,7 +62,7 @@ impl FromStr for Code {
 }
 
 impl Code {
-    fn to_string(&self) -> &'static str {
+    fn crate_name(&self) -> &'static str {
         match self {
             Code::Pool => "fish-pool",
             Code::Gate => "pool-gate",
@@ -171,7 +171,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
     let dir = bin.get_code_dir();
     let run = |pane: u8| -> CmdResult {
         let build = "cargo build --release";
-        let cmd = dir.clone() + "/target/release/" + &bin.to_string();
+        let cmd = dir.clone() + "/target/release/" + &bin.crate_name();
         run_cmd!(
             tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane "cd $dir" C-m;
             tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane $build C-m;
@@ -242,7 +242,7 @@ fn run_chain() -> CmdResult {
 }
 
 fn update(code: &Code) -> CmdResult {
-    let code_name = code.to_string();
+    let code_name = code.crate_name();
     let dir = match code {
         Code::Me => {
             let self_dir = env::var("SELF").unwrap();
@@ -343,7 +343,7 @@ fn main() -> CmdResult {
         Sub::Update { code } => {
             for code in code {
                 update(&code)?;
-                info!("code {} updated", code.to_string());
+                info!("code {} updated", code.crate_name());
             }
         }
     }
