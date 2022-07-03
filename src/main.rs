@@ -168,14 +168,20 @@ fn setup_tmux() -> CmdResult {
 }
 
 fn run_in_tmux(bin: Code) -> CmdResult {
-    let dir = bin.get_code_dir();
     let run = |pane: u8| -> CmdResult {
+        let dir = bin.get_code_dir();
+        let cmd = match bin {
+            Code::Pool | Code::Gate => {
+                dir.clone() + "/../target/release/" + &bin.crate_name()
+            }
+            _ => {
+                dir.clone() + "/target/release/" + &bin.crate_name()
+            }
+        };
         let build = "cargo build --release";
-        let cmd = dir.clone() + "/target/release/" + &bin.crate_name();
         run_cmd!(
             tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane "cd $dir" C-m;
             tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane $build C-m;
-            tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane "tput reset" C-m;
             tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane $cmd C-m;
         )
     };
