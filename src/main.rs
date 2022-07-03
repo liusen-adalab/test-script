@@ -170,9 +170,12 @@ fn setup_tmux() -> CmdResult {
 fn run_in_tmux(bin: Code) -> CmdResult {
     let dir = bin.get_code_dir();
     let run = |pane: u8| -> CmdResult {
-        let cmd = "cargo run --release";
+        let build = "cargo build --release";
+        let cmd = dir.clone() + "/target/release/" + &bin.to_string();
         run_cmd!(
             tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane "cd $dir" C-m;
+            tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane $build C-m;
+            tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane "clear" C-m;
             tmux send-keys -t $SESSION_FISH:$WIN_POOL.$pane $cmd C-m;
         )
     };
@@ -202,7 +205,7 @@ fn run_in_tmux(bin: Code) -> CmdResult {
                 thread::sleep(Duration::from_millis(12));
                 let name = "miner-".to_string() + &i.to_string() + "-" + &suffix.to_string();
 
-                let cmd = cmd.clone() + "-a " + &create_account(&name)?;
+                let cmd = cmd.clone() + " -a " + &create_account(&name)?;
                 run_cmd!(
                     tmux send-keys  -t $SESSION_FISH:$WIN_MINER.$i $cmd;
                 )?;
@@ -274,7 +277,6 @@ fn update(code: &Code) -> CmdResult {
 
 fn create_account(name: &str) -> Result<String, io::Error> {
     let node_dir = std::env::var("IRON_DIR").unwrap();
-    println!("{}", node_dir);
     let res = run_fun!(
         cd $node_dir;
         yarn start accounts:create $name;
