@@ -1,4 +1,4 @@
-use std::{env, str::FromStr, thread, time::Duration};
+use std::{env, io, str::FromStr, thread, time::Duration};
 
 use cmd_lib::{
     log::{info, warn},
@@ -129,6 +129,10 @@ fn setup_tmux() -> CmdResult {
     // build window for miners
     run_cmd!(
         tmux new-window -t $SESSION_FISH:1 -n $WIN_MINER;
+        tmux splitw -h -p 50;
+        tmux splitw -v -p 50;
+        tmux selectp -t 0;
+        tmux splitw -v -p 50;
     )?;
 
     // build window for middleware service
@@ -189,9 +193,20 @@ fn run_in_tmux(bin: Code) -> CmdResult {
         }
         Code::Miner => {
             let cmd = std::env::var("MINER_CMD").unwrap();
-            run_cmd!(
-                tmux send-keys  -t $SESSION_FISH:$WIN_MINER.0 $cmd C-m;
-            )?;
+            for i in 0..3 {
+                let timestamp = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
+                let suffix = (timestamp | 255) as u8;
+                thread::sleep(Duration::from_millis(12));
+                let name = "miner-".to_string() + &i.to_string() + "-" + &suffix.to_string();
+
+                let cmd = cmd.clone() + "-a " + &create_account(&name)?;
+                run_cmd!(
+                    tmux send-keys  -t $SESSION_FISH:$WIN_MINER.$i $cmd;
+                )?;
+            }
         }
         Code::Me => {
             panic!("don't run `setup` in tmux");
@@ -248,15 +263,32 @@ fn update(code: &Code) -> CmdResult {
             update(&Code::Pool)?;
             return Ok(());
         }
-        _ => {
-            code.get_code_dir()
-        }
+        _ => code.get_code_dir(),
     };
     run_cmd!(
         cd $dir;
         git pull origin test;
         cargo build --release --bin $code_name;
     )
+}
+
+fn create_account(name: &str) -> Result<String, io::Error> {
+    let node_dir = std::env::var("IRON_DIR").unwrap();
+    println!("{}", node_dir);
+    let res = run_fun!(
+        cd $node_dir;
+        yarn start accounts:create $name;
+    )?;
+    let mut address = res.split(" ");
+    while let Some(s) = address.next() {
+        if s == "address" {
+            break;
+        }
+    }
+    Ok(address
+        .next()
+        .ok_or(io::ErrorKind::AlreadyExists)?
+        .to_string())
 }
 
 fn main() -> CmdResult {
