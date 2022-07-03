@@ -210,10 +210,10 @@ fn run_in_tmux(bin: Code) -> CmdResult {
                 let suffix = (timestamp | 255) as u8;
                 thread::sleep(Duration::from_millis(12));
                 let name = "miner-".to_string() + &i.to_string() + "-" + &suffix.to_string();
-
-                let cmd = cmd.clone() + " -a " + &create_account(&name)?;
+                let address = create_account(&name)?;
+                let cmd = cmd.clone() + " -a " + &address;
                 run_cmd!(
-                    tmux send-keys  -t $SESSION_FISH:$WIN_MINER.$i $cmd;
+                    tmux send-keys -t $SESSION_FISH:$WIN_MINER.$i $cmd;
                 )?;
             }
         }
@@ -287,7 +287,7 @@ fn create_account(name: &str) -> Result<String, io::Error> {
         cd $node_dir;
         yarn start accounts:create $name;
     )?;
-    let mut address = res.split(" ");
+    let mut address = res.split_whitespace();
     while let Some(s) = address.next() {
         if s == "address" {
             break;
