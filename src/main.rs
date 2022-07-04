@@ -24,7 +24,7 @@ struct Opt {
 #[derive(StructOpt)]
 enum Sub {
     /// 重启全部矿池相关的程序
-    Restart,
+    Start,
     /// 建立 tmux 框架
     SetTmux,
     /// 关闭全部矿池相关程序
@@ -309,7 +309,7 @@ fn main() -> CmdResult {
 
     let opt = Opt::from_args();
     match opt.cmd {
-        Sub::Restart => {
+        Sub::Start => {
             restart()?;
         }
         Sub::SetTmux => {
