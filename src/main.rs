@@ -23,25 +23,29 @@ struct Opt {
 
 #[derive(StructOpt)]
 enum Sub {
-    /// 重启全部矿池相关的程序
+    /// 启动全部矿池相关的程序
+    /// 自动进入 tmux
     Start,
     /// 建立 tmux 框架
     SetTmux,
     /// 关闭全部矿池相关程序
     Kill {
-        /// 是否关闭区块链网络
-        code: Option<String>,
+        /// all 关闭测试网络，并清空 redis 数据
+        /// mysql 需要手动清空
+        all: Option<String>,
     },
-    /// 更新代码
-    /// 支持 pool, gate, coin, all, self
+    /// 从 git 拉取 test 分支，编译
+    /// 支持 pool, gate, coin(分币), all, self, miner
     Update { code: Vec<Code> },
 }
 
+#[derive(StructOpt)]
 enum Code {
     Pool,
     Gate,
     All,
     Miner,
+    /// coin
     Distribute,
     Me,
 }
@@ -315,7 +319,7 @@ fn main() -> CmdResult {
         Sub::SetTmux => {
             setup_tmux()?;
         }
-        Sub::Kill { code } => {
+        Sub::Kill { all: code } => {
             if run_cmd!(tmux kill-session -t $SESSION_FISH;).is_err() {
                 info!("session {} not exist", SESSION_FISH);
             } else {
