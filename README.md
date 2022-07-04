@@ -2,6 +2,7 @@
 基本操作流程
 1. 关闭所有程序： setup kill all
 2. 重启所有程序：setup start
+3. clt-W 进入 miner 窗口，直接回车运行 miner
 
 - 更新程序（git 拉取 test 分支后编译）： setup updata [pool | gate | miner | coin | self | all ]
 
