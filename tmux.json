@@ -1,16 +1,26 @@
 {
-    "pool": {
-        "pane0": "pool",
-        "pane1": "gate",
-        "pane2": "coin-distribute",
-        "pane3": "none"
+    "session-fish": {
+        "pool": {
+            "pane0": "pool",
+            "pane1": "gate",
+            "pane2": "coin-distribute",
+            "pane3": "null"
+        },
+        "miner": {
+            "pane0": "miner1",
+            "pane1": "miner2",
+            "pane2": "miner3",
+            "pane3": "null"
+        },
+        "sevice": {
+            "pane0": "null",
+            "pane1": "redis-server"
+        }
     },
-    "node": {
-        "pane0": "node0",
+    "session-node": {
+        "pane0": "null",
         "pane1": "node1",
-        "pane2": "node2"
-    },
-    "sevice": {
-        "pane0": "redis-server"
+        "pane2": "node2",
+        "pane3": "node3"
     }
 }
