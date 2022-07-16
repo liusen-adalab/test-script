@@ -205,18 +205,17 @@ fn run_in_tmux(bin: Code) -> CmdResult {
             run_in_tmux(Code::Miner)?;
         }
         Code::Miner => {
-            let cmd = std::env::var("MINER_CMD").unwrap();
-            for i in 0..3 {
-                let timestamp = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs();
-                let suffix = (timestamp | 255) as u8;
-                thread::sleep(Duration::from_millis(12));
-                let name = "miner-".to_string() + &i.to_string() + "-" + &suffix.to_string();
-                let address = create_account(&name)?;
-                let cmd = cmd.clone() + " -a " + &address;
-                run_cmd!(
+            let cmd =
+                "./target/release/noah-miner -t 1 -p tcp://127.0.0.1:8888 -b 1000000 --coin=iron"
+                    .to_string();
+            let build = "cargo build --release";
+            let dir = std::env::var("MINER_DIR").unwrap();
+            for i in 1..=3 {
+                let addr = std::env::var("MINER_ADDR".to_string() + &i.to_string()).unwrap();
+                let cmd = cmd.clone() + " -a " + &addr;
+                let _cmd = run_cmd!(
+                    tmux send-keys -t $SESSION_FISH:$WIN_POOL.$i "cd $dir" C-m;
+                    tmux send-keys -t $SESSION_FISH:$WIN_POOL.$i $build C-m;
                     tmux send-keys -t $SESSION_FISH:$WIN_MINER.$i $cmd;
                 )?;
             }
